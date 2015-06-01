@@ -28,21 +28,21 @@ int test_two()
 
   test_triplet_t testvec[5] = {
     {
-      1152, 448, 28, "Keccak-224 Test Hash", {
+      1152, 448, 224, "Keccak-224 Test Hash", {
         0x30, 0x04, 0x5B, 0x34, 0x94, 0x6E, 0x1B, 0x2E,
         0x09, 0x16, 0x13, 0x36, 0x2F, 0xD2, 0x2A, 0xA0,
         0x8E, 0x2B, 0xEA, 0xFE, 0xC5, 0xE8, 0xDA, 0xEE,
         0x42, 0xC2, 0xE6, 0x65
       }
     }, {
-      1088, 512, 32, "Keccak-256 Test Hash", {
+      1088, 512, 256, "Keccak-256 Test Hash", {
         0xA8, 0xD7, 0x1B, 0x07, 0xF4, 0xAF, 0x26, 0xA4,
         0xFF, 0x21, 0x02, 0x7F, 0x62, 0xFF, 0x60, 0x26,
         0x7F, 0xF9, 0x55, 0xC9, 0x63, 0xF0, 0x42, 0xC4,
         0x6D, 0xA5, 0x2E, 0xE3, 0xCF, 0xAF, 0x3D, 0x3C
       }
     }, {
-      832, 768, 48, "Keccak-384 Test Hash", {
+      832, 768, 384, "Keccak-384 Test Hash", {
         0xE2, 0x13, 0xFD, 0x74, 0xAF, 0x0C, 0x5F, 0xF9,
         0x1B, 0x42, 0x3C, 0x8B, 0xCE, 0xEC, 0xD7, 0x01,
         0xF8, 0xDD, 0x64, 0xEC, 0x18, 0xFD, 0x6F, 0x92,
@@ -51,7 +51,7 @@ int test_two()
         0x1A, 0x99, 0xA1, 0x8A, 0x7D, 0x9E, 0x44, 0x6E
       }
     }, {
-      576, 1024, 64, "Keccak-512 Test Hash", {
+      576, 1024, 512, "Keccak-512 Test Hash", {
         0x96, 0xEE, 0x47, 0x18, 0xDC, 0xBA, 0x3C, 0x74,
         0x61, 0x9B, 0xA1, 0xFA, 0x7F, 0x57, 0xDF, 0xE7,
         0x76, 0x9D, 0x3F, 0x66, 0x98, 0xA8, 0xB3, 0x3F,
@@ -62,7 +62,7 @@ int test_two()
         0x4B, 0x5C, 0xBF, 0x78, 0x28, 0x65, 0x8E, 0x6A
       }
     }, {
-      576, 1024, 64, "The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog...", {
+      576, 1024, 512, "The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog.The quick brown fox jumps over the lazy dog...", {
         0x89, 0x22, 0x9e, 0xcb, 0x2c, 0x30, 0x55, 0xde,
         0xdc, 0x83, 0x8, 0x88, 0xd3, 0xba, 0x4, 0x57,
         0xa7, 0x4, 0x7f, 0x38, 0x4f, 0xc3, 0x63, 0xe5,
@@ -93,19 +93,19 @@ int test_two()
       continue;
     }
 
-    if (memcmp(md, testvec[i].md, testvec[i].mdlen)) {
+    if (memcmp(md, testvec[i].md, testvec[i].mdlen/8)) {
       fails++;
-      fprintf(stderr, "Keccak-%d FAILED.\n", testvec[i].mdlen * 8);
+      fprintf(stderr, "Keccak-%d FAILED.\n", testvec[i].mdlen);
 
       printf("Byte at pos");
-      for (j = 0; j < testvec[i].mdlen; ++j) {
+      for (j = 0; j < testvec[i].mdlen/8; ++j) {
         if (testvec[i].md[j] != md[j]) {
            printf(" %d", j);
         }
       }
       printf(" wrong.\n");
 
-      for (j = 0; j < testvec[i].mdlen; ++j) {
+      for (j = 0; j < testvec[i].mdlen/8; ++j) {
         printf("0x%x\t", md[j]);
 
         if ((j + 1) % 8 == 0) {
@@ -114,7 +114,7 @@ int test_two()
       }
       printf("\n");
     } else {
-      printf("Keccak-%d OK\n", testvec[i].mdlen * 8);
+      printf("Keccak-%d OK\n", testvec[i].mdlen);
     }
   }
 

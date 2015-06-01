@@ -142,29 +142,29 @@ int keccakf(int rounds, uint64_t* state)
 
 int sha3_512(uint8_t* M, int l, uint8_t* O)
 {
-  return keccak(576, 1024, 64, l, M, O);
+  return keccak(576, 1024, 512, l, M, O);
 }
 
 int sha3_384(uint8_t* M, int l, uint8_t* O)
 {
-  return keccak(832, 768, 48, l, M, O);
+  return keccak(832, 768, 384, l, M, O);
 }
 
 int sha3_256(uint8_t* M, int l, uint8_t* O)
 {
-  return keccak(1088, 512, 32, l, M, O);
+  return keccak(1088, 512, 256, l, M, O);
 }
 
 int sha3_224(uint8_t* M, int l, uint8_t* O)
 {
-  return keccak(1152, 448, 28, l, M, O);
+  return keccak(1152, 448, 224, l, M, O);
 }
 
 /* Keccak */
 /*
 r = bit rate
 c = capacity
-n = output length
+n = output length in bits
 l = message length
 M = message of bytes
 O = output
@@ -176,6 +176,10 @@ int keccak(int r, int c, int n, int l, uint8_t* M, uint8_t* O)
   /* bit rate must be a multiple of the lane size */
   if (r < 0 || (r % 8 != 0)) {
     return -1;
+  }
+
+  if (n % 8 != 0) {
+    return -2;
   }
 
   /* check permutation width */
@@ -244,7 +248,7 @@ int keccak(int r, int c, int n, int l, uint8_t* M, uint8_t* O)
    */
 
   /* copy output */
-  memcpy(O, A, n);
+  memcpy(O, A, n/8);
 
   return 0;
 }
