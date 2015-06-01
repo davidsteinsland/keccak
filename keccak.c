@@ -156,6 +156,76 @@ int keccakf(int rounds, uint64_t* state)
   return 0;
 }
 
+void sponge_absorb(int nr, int r, int w, int blocks, uint64_t* A, uint8_t* P)
+{
+  /* absorbing phase */
+  int x, y;
+  /* for every block Pi in P */
+  for (y = 0; y < blocks; ++y) {
+    uint64_t* block = (uint64_t*)P + y * r/w;
+
+    /* S[x, y] = S[x, y] ⊕ Pi[x + 5y],   ∀(x, y) such that x + 5y < r/w */
+    for (x = 0; x < (r/w); ++x) {
+      A[x] = A[x] ^ block[x];
+    }
+
+    /* S = Keccak-f[r + c](S) */
+    keccakf(nr, A);
+  }
+}
+
+void sponge_squeeze(int nr, int r, int n, uint64_t* A, uint8_t* O)
+{
+  /*
+    For SHA-3 we have r > n in any case, i.e., the squeezing phase
+      consists of one round.
+   */
+  int i = 0;
+  while (n) {
+    size_t size = r;
+
+    if (r > n) {
+        size = n;
+    }
+
+    /* Copies A[0:size/8] to O[i:i + size/8 - 1] */
+    memcpy(&O[i], A, size/8);
+    i = i + size/8;
+
+    n = n - size;
+
+    if (n > 0) {
+      keccakf(nr, A);
+    }
+  }
+}
+
+void pad101(int r, int* blocks, int* l, uint8_t* M, uint8_t* P)
+{
+  int block_size = r/8;
+
+  /* zero out data and copy M into P */
+  memset(P, 0, (*blocks + 1) * block_size * sizeof(uint8_t));
+
+  int i;
+  for (i = 0; i < *l; ++i) {
+      P[i] = M[i];
+  }
+
+  /* padding */
+  if (*l % block_size == 0) {
+    return;
+  }
+
+  /* round up */
+  *blocks = (block_size + *l + 1) / block_size;
+
+  /* add padding bytes */
+  P[*l] = 0x01;
+  *l = block_size * (*blocks);
+  P[*l - 1] = 0x80;
+}
+
 /* Keccak */
 /*
 r = bit rate
@@ -200,66 +270,21 @@ int keccak(int r, int c, int n, int l, uint8_t* M, uint8_t* O)
 
   /* lane width */
   int w = perms[j].w;
+  /* number of rounds */
+  int nr = perms[j].nr;
+  /* block size in bytes */
   int block_size = r/8;
 
+  /* calculate how many blocks M consist of */
   int blocks = l / block_size;
   /* make room for padding, if necessary */
   uint8_t P[block_size * (blocks + 1)];
 
-  /* zero out data and copy M into P */
-  memset(P, 0, (blocks + 1) * block_size * sizeof(uint8_t));
-  for (i = 0; i < l; ++i) {
-      P[i] = M[i];
-  }
-
   /* padding */
-  if (l % block_size != 0) {
-    /* round up */
-    blocks = (block_size + l + 1) / block_size;
+  pad101(r, &blocks, &l, M, P);
 
-    /* add padding bytes */
-    P[l] = 0x01;
-    l = block_size * blocks;
-    P[l - 1] = 0x80;
-  }
-
-  /* absorbing phase */
-  int x;
-  /* for every block Pi in P */
-  for (i = 0; i < blocks; ++i) {
-    uint64_t* block = (uint64_t*)P + i * r/w;
-
-    /* S[x, y] = S[x, y] ⊕ Pi[x + 5y],   ∀(x, y) such that x + 5y < r/w */
-    for (x = 0; x < (r/w); ++x) {
-      A[x] = A[x] ^ block[x];
-    }
-
-    /* S = Keccak-f[r + c](S) */
-    keccakf(perms[j].nr, A);
-  }
-
-  /*
-    For SHA-3 we have r > n in any case, i.e., the squeezing phase
-      consists of one round.
-   */
-  i = 0;
-  while (n) {
-    size_t size = r;
-
-    if (r > n) {
-        size = n;
-    }
-
-    /* Copies A[0:size/8] to O[i:i + size/8 - 1] */
-    memcpy(&O[i], A, size/8);
-    i = i + size/8;
-
-    n = n - size;
-
-    if (n > 0) {
-      keccakf(perms[j].nr, A);
-    }
-  }
+  sponge_absorb(nr, r, w, blocks, A, P);
+  sponge_squeeze(nr, r, n, A, O);
 
   return 0;
 }
