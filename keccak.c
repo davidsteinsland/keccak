@@ -81,7 +81,7 @@ void keccak_round(int nr, uint64_t* state)
   }
 
   for (x = 0; x < 5; ++x) {
-    /* in order to avoid negative mod values, 
+    /* in order to avoid negative mod values,
       we've replaced "(x - 1) % 5" with "(x + 4) % 5" */
     D[x] = C[(x + 4) % 5] ^ ROTL64(C[(x + 1) % 5], 1);
 
@@ -90,17 +90,37 @@ void keccak_round(int nr, uint64_t* state)
     }
   }
 
-  /* Rho and Pi */
+  /* Rho */
   for (y = 0; y < 5; ++y) {
     for (x = 0; x < 5; ++x) {
-      B[5 * ((2*x + 3*y) % 5) + y] = ROTL64(state[y * 5 + x], rx[y * 5 + x]);
+      state[y * 5 + x] = ROTL64(state[y * 5 + x], rx[y * 5 + x]);
+    }
+  }
+
+  /* Pi */
+  for (y = 0; y < 5; ++y) {
+    for (x = 0; x < 5; ++x) {
+      B[y * 5 + x] = state[5 * y + x];
+    }
+  }
+  int u, v;
+  for (y = 0; y < 5; ++y) {
+    for (x = 0; x < 5; ++x) {
+      u = (0 * x + 1 * y) % 5;
+      v = (2 * x + 3 * y) % 5;
+
+      state[v * 5 + u] = B[5 * y + x];
     }
   }
 
   /* Chi */
   for (y = 0; y < 5; ++y) {
     for (x = 0; x < 5; ++x) {
-      state[y * 5 + x] = B[y * 5 + x] ^ ((~B[y * 5 + ((x + 1) % 5)] & B[y * 5 + ((x + 2) % 5)])); 
+      C[x] = state[y * 5 + x] ^ ((~state[y * 5 + ((x + 1) % 5)]) & state[y * 5 + ((x + 2) % 5)]);
+    }
+
+    for (x = 0; x < 5; ++x) {
+      state[y * 5 + x] = C[x];
     }
   }
 
