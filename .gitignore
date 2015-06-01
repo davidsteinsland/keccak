@@ -1,0 +1,6 @@
+*.o
+
+keccak
+keccak_tiny
+
+*.sublime-*
