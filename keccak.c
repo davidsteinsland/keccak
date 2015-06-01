@@ -243,12 +243,27 @@ int keccak(int r, int c, int n, int l, uint8_t* M, uint8_t* O)
   }
 
   /*
-    We have r/8 > n in any case, i.e., the squeezing phase
+    For SHA-3 we have r > n in any case, i.e., the squeezing phase
       consists of one round.
    */
+  i = 0;
+  while (n) {
+    size_t size = r;
 
-  /* copy output */
-  memcpy(O, A, n/8);
+    if (r > n) {
+        size = n;
+    }
+
+    /* Copies A[0:size/8] to O[i:i + size/8 - 1] */
+    memcpy(&O[i], A, size/8);
+    i = i + size/8;
+
+    n = n - size;
+
+    if (n > 0) {
+      keccakf(perms[j].nr, A);
+    }
+  }
 
   return 0;
 }
