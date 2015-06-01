@@ -156,10 +156,12 @@ int keccakf(int rounds, uint64_t* state)
   return 0;
 }
 
-void sponge_absorb(int nr, int r, int w, int blocks, uint64_t* A, uint8_t* P)
+void sponge_absorb(int nr, int r, int w, int l, uint64_t* A, uint8_t* P)
 {
   /* absorbing phase */
   int x, y;
+  int blocks = l / (r / 8);
+
   /* for every block Pi in P */
   for (y = 0; y < blocks; ++y) {
     uint64_t* block = (uint64_t*)P + y * r/w;
@@ -200,30 +202,31 @@ void sponge_squeeze(int nr, int r, int n, uint64_t* A, uint8_t* O)
   }
 }
 
-void pad101(int r, int* blocks, int* l, uint8_t* M, uint8_t* P)
+int pad101(int r, int blocks, int l, uint8_t* M, uint8_t* P)
 {
   int block_size = r/8;
 
+  /* length of the padded block */
+  size_t block_len = (blocks + 1) * block_size;
+
   /* zero out data and copy M into P */
-  memset(P, 0, (*blocks + 1) * block_size * sizeof(uint8_t));
+  memset(P, 0, block_len * sizeof(uint8_t));
 
   int i;
-  for (i = 0; i < *l; ++i) {
+  for (i = 0; i < l; ++i) {
       P[i] = M[i];
   }
 
+  /* add padding bytes */
+  P[l] = 0x01;
+  P[block_len - 1] = 0x80;
+
   /* padding */
-  if (*l % block_size == 0) {
-    return;
+  if (l % block_size == 0) {
+    return l;
   }
 
-  /* round up */
-  *blocks = (block_size + *l + 1) / block_size;
-
-  /* add padding bytes */
-  P[*l] = 0x01;
-  *l = block_size * (*blocks);
-  P[*l - 1] = 0x80;
+  return block_len;
 }
 
 /* Keccak */
@@ -281,9 +284,9 @@ int keccak(int r, int c, int n, int l, uint8_t* M, uint8_t* O)
   uint8_t P[block_size * (blocks + 1)];
 
   /* padding */
-  pad101(r, &blocks, &l, M, P);
+  l = pad101(r, blocks, l, M, P);
 
-  sponge_absorb(nr, r, w, blocks, A, P);
+  sponge_absorb(nr, r, w, l, A, P);
   sponge_squeeze(nr, r, n, A, O);
 
   return 0;
