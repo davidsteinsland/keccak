@@ -61,20 +61,13 @@ void compute_rho(int w)
   }
 }
 
-/* Keccak-F[b] round function */
-void keccak_round(int nr, uint64_t* state)
+void theta(uint64_t* state)
 {
-  uint64_t B[25] = {
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0
-  };
+  /* Theta */
+
   uint64_t C[5] = {0, 0, 0, 0, 0};
   uint64_t D[5] = {0, 0, 0, 0, 0};
 
-  /* Theta */
   int x, y;
   for (x = 0; x < 5; ++x) {
     C[x] = state[x] ^ state[5 + x] ^ state[10 + x] ^ state[15 + x] ^ state[20 + x];
@@ -89,15 +82,25 @@ void keccak_round(int nr, uint64_t* state)
       state[y * 5 + x] = state[y * 5 + x] ^ D[x];
     }
   }
+}
 
+void rho(uint64_t* state)
+{
   /* Rho */
+  int x, y;
   for (y = 0; y < 5; ++y) {
     for (x = 0; x < 5; ++x) {
       state[y * 5 + x] = ROTL64(state[y * 5 + x], rx[y * 5 + x]);
     }
   }
+}
 
+void pi(uint64_t* state)
+{
   /* Pi */
+  uint64_t B[25];
+
+  int x, y;
   for (y = 0; y < 5; ++y) {
     for (x = 0; x < 5; ++x) {
       B[y * 5 + x] = state[5 * y + x];
@@ -112,8 +115,14 @@ void keccak_round(int nr, uint64_t* state)
       state[v * 5 + u] = B[5 * y + x];
     }
   }
+}
 
+void chi(uint64_t* state)
+{
   /* Chi */
+  uint64_t C[5];
+
+  int x, y;
   for (y = 0; y < 5; ++y) {
     for (x = 0; x < 5; ++x) {
       C[x] = state[y * 5 + x] ^ ((~state[y * 5 + ((x + 1) % 5)]) & state[y * 5 + ((x + 2) % 5)]);
@@ -123,10 +132,13 @@ void keccak_round(int nr, uint64_t* state)
       state[y * 5 + x] = C[x];
     }
   }
+}
 
+void iota(uint64_t* state, int i)
+{
   /* Iota */
   /* XXX: truncate RC[i] if w < 64 */
-  state[0] = state[0] ^ RC[nr];
+  state[0] = state[0] ^ RC[i];
 }
 
 /* Keccak-F[b] function */
@@ -134,30 +146,14 @@ int keccakf(int rounds, uint64_t* state)
 {
   int i;
   for (i = 0; i < rounds; ++i) {
-    keccak_round(i, state);
+    theta(state);
+    rho(state);
+    pi(state);
+    chi(state);
+    iota(state, i);
   }
 
   return 0;
-}
-
-int sha3_512(uint8_t* M, int l, uint8_t* O)
-{
-  return keccak(576, 1024, 512, l, M, O);
-}
-
-int sha3_384(uint8_t* M, int l, uint8_t* O)
-{
-  return keccak(832, 768, 384, l, M, O);
-}
-
-int sha3_256(uint8_t* M, int l, uint8_t* O)
-{
-  return keccak(1088, 512, 256, l, M, O);
-}
-
-int sha3_224(uint8_t* M, int l, uint8_t* O)
-{
-  return keccak(1152, 448, 224, l, M, O);
 }
 
 /* Keccak */
@@ -266,4 +262,24 @@ int keccak(int r, int c, int n, int l, uint8_t* M, uint8_t* O)
   }
 
   return 0;
+}
+
+int sha3_512(uint8_t* M, int l, uint8_t* O)
+{
+  return keccak(576, 1024, 512, l, M, O);
+}
+
+int sha3_384(uint8_t* M, int l, uint8_t* O)
+{
+  return keccak(832, 768, 384, l, M, O);
+}
+
+int sha3_256(uint8_t* M, int l, uint8_t* O)
+{
+  return keccak(1088, 512, 256, l, M, O);
+}
+
+int sha3_224(uint8_t* M, int l, uint8_t* O)
+{
+  return keccak(1152, 448, 224, l, M, O);
 }

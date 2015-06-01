@@ -12,9 +12,7 @@ typedef struct {
 
 void compute_rho(int w);
 
-void keccak_round(int, uint64_t*);
 int keccakf(int, uint64_t*);
-
 int keccak(int r, int c, int n, int l, uint8_t* M, uint8_t* O);
 
 int sha3_512(uint8_t* M, int l, uint8_t* O);
