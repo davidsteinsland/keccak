@@ -4,7 +4,7 @@ LD = ld
 CFLAGS = -Wall -c -O
 LDFLAGS=
 
-OBJS = main.o 
+OBJS = main.o tests/one.o tests/two.o tests/three.o
 
 .PHONY: all clean
 
@@ -19,5 +19,6 @@ keccak_tiny: keccak_tiny.o $(OBJS)
 
 clean:
 	-$(RM) *.o
+	-$(RM) tests/*.o
 	-$(RM) keccak
 	-$(RM) keccak_tiny
